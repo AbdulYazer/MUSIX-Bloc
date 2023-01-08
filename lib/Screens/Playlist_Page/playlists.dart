@@ -1,6 +1,7 @@
 import 'package:assets_audio_player/assets_audio_player.dart';
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/adapters.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:music_player/Application/HomeScreenBloc/home_screen_bloc.dart';
 import 'package:music_player/Screens/Playlist_Page/Adding_Songs_Playlist.dart';
 import 'package:music_player/Screens/Playlist_Page/play&pause_button.dart';
 import 'package:music_player/Screens/Playlist_Page/playlists_page.dart';
@@ -11,6 +12,7 @@ import 'package:music_player/Screens/Splash_Page/splash.dart';
 import 'package:music_player/style/style.dart';
 import 'package:music_player/widgets/heightbox_widget.dart';
 import 'package:on_audio_query/on_audio_query.dart';
+import '../../Application/PlaylistsBloc/playlists_bloc.dart';
 import '../../Settings_Page/settings.dart';
 import '../../db/Model/model.dart';
 
@@ -19,7 +21,7 @@ List<Songs> playlistslist = [];
 List<Audio> playlistsongs = [];
 AssetsAudioPlayer audioPlayerplaylist = AssetsAudioPlayer.withId('0');
 
-class PlaylistsSongs extends StatefulWidget {
+class PlaylistsSongs extends StatelessWidget {
   PlaylistsSongs(
       {super.key,
       required this.playlistname,
@@ -28,19 +30,6 @@ class PlaylistsSongs extends StatefulWidget {
   String playlistname;
   int playlistindex;
   List<Songs> allplaylistsongs = [];
-
-  @override
-  State<PlaylistsSongs> createState() => _PlaylistsSongsState();
-}
-
-class _PlaylistsSongsState extends State<PlaylistsSongs> {
-  @override
-  void initState() {
-    setState(() {
-      Addplaylistsfromdb(allplaylistsongs: widget.allplaylistsongs);
-    });
-    super.initState();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,169 +52,177 @@ class _PlaylistsSongsState extends State<PlaylistsSongs> {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               IconButton(
-                  onPressed: () {
-                    Navigator.of(context).push(MaterialPageRoute(
-                        builder: (context) => AddingSongsPlaylist(
-                              playlistIndex: widget.playlistindex,
-                            )));
-                  },
-                  icon: const Icon(
-                    Icons.add_box_outlined,
-                    color: Colors.white,
-                  ),),
+                onPressed: () {
+                  Addplaylistsfromdb(allplaylistsongs: allplaylistsongs);
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (context) => AddingSongsPlaylist(
+                            playlistIndex: playlistindex,
+                          )));
+                  BlocProvider.of<PlaylistsBloc>(context)
+                      .add(const PlaylistsAdded());
+                },
+                icon: const Icon(
+                  Icons.add_box_outlined,
+                  color: Colors.white,
+                ),
+              ),
               Popupbutton(
-                playlistindex: widget.playlistindex,
+                playlistindex: playlistindex,
                 playlistlist: playlistslist,
               ),
             ],
           ),
           playlisticon(context),
           heightbox(height: 20),
-          ValueListenableBuilder<Box<Playlists>>(valueListenable: playlistsbox.listenable(),
-           builder: (context, value, child){
-            return Text(
-            value.values.toList()[widget.playlistindex].playlistname,
-            style: playlistnametext,
-          );
-           }),
-          
+          // ValueListenableBuilder<Box<Playlists>>(valueListenable: playlistsbox.listenable(),
+          //  builder: (context, value, child){
+          BlocBuilder<PlaylistsBloc, PlaylistsState>(
+            builder: (context, state) {
+              return Text(
+                state.playlistdb.toList()[playlistindex].playlistname,
+                style: playlistnametext,
+              );
+            },
+          ),
+          //  }),
+
           heightbox(height: 20),
           PlayPauseButton(
-              playlistname: widget.playlistname,
-              playlistindex: widget.playlistindex,
-              allplaylistsongs: widget.allplaylistsongs),
+              playlistname: playlistname,
+              playlistindex: playlistindex,
+              allplaylistsongs: allplaylistsongs),
           heightbox(height: 10),
-          Expanded(
-            child: ValueListenableBuilder<Box<Playlists>>(
-              valueListenable: playlistsbox.listenable(),
-              builder: (context, value, child) {
-                List<Playlists> playlistsong = playlistsbox.values.toList();
-                songs = playlistsong[widget.playlistindex].playlistsongs;
-                Addplaylistsfromdb(allplaylistsongs: widget.allplaylistsongs);
-                RecentSongs recents;
-                if (songs.isEmpty) {
-                  return Builder(builder: (context) {
-                    playbuttonvisible = false;
-                    return Center(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        //mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          //addsongbutton(context),
-                          heightbox(height: 120),
-                          //TextButton(onPressed: (){}, child: const Text('Add Songs',style: TextStyle(color: Colors.white,fontSize: 18),)),
-                          const Text(
-                            'No Songs Added !',
-                            style: songnametext,
+          Expanded(child: BlocBuilder<PlaylistsBloc, PlaylistsState>(
+            builder: (context, state) {
+              final playlistsong = state.playlistdb.toList();
+              songs = playlistsong[playlistindex].playlistsongs;
+              Addplaylistsfromdb(allplaylistsongs: allplaylistsongs);
+              RecentSongs recents;
+              if (songs.isEmpty) {
+                return Builder(builder: (context) {
+                  playbuttonvisible = false;
+                  return Center(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      //mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        //addsongbutton(context),
+                        heightbox(height: 120),
+                        //TextButton(onPressed: (){}, child: const Text('Add Songs',style: TextStyle(color: Colors.white,fontSize: 18),)),
+                        const Text(
+                          'No Songs Added !',
+                          style: songnametext,
+                        ),
+                      ],
+                    ),
+                  );
+                });
+              }
+
+              return ListView.builder(
+                  //itemExtent: 80,
+                  itemCount: songs.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      onTap: () {
+                        BlocProvider.of<HomeScreenBloc>(context)
+                            .add(const PlayerVisible());
+                        recents = RecentSongs(
+                            songname: songs[index].songname,
+                            artist: songs[index].artist,
+                            id: songs[index].id,
+                            duration: songs[index].duration,
+                            songurl: songs[index].songurl,
+                            count: 0);
+                        updateRecentlyPlayed(recents);
+                        final songIndex = allDbSongs.indexWhere((e) =>
+                            e.songname.toString() ==
+                            songs[index].songname.toString());
+                        songCount(allDbSongs[songIndex], songIndex);
+                        audioPlayerplaylist.open(
+                          Playlist(audios: playlistsongs, startIndex: index),
+                          showNotification: notificationSwitch,
+                        );
+                        isPlaying = true;
+                        BlocProvider.of<PlaylistsBloc>(context)
+                            .add(const PlaylistsAdded());
+
+                        // setState(() {
+                        //   //playerVisibility= true;
+                        // });
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                              builder: (context) => CurrentlyPlaying(
+                                    audioPlayer: audioPlayerplaylist,
+                                  )),
+                        );
+                        //print(playlistsongs);
+                      },
+                      leading: QueryArtworkWidget(
+                        id: songs[index].id,
+                        type: ArtworkType.AUDIO,
+                        artworkHeight: 90,
+                        artworkWidth: 60,
+                        artworkBorder: BorderRadius.circular(15),
+                        nullArtworkWidget: ClipRRect(
+                          borderRadius: BorderRadius.circular(15),
+                          child: Image.asset(
+                            'assets/images/currentplaylogo1.png',
+                            width: 60,
+                            height: 90,
+                            fit: BoxFit.cover,
                           ),
-                        ],
+                        ),
                       ),
+                      title: Text(
+                        songs[index].songname,
+                        style: songnametext,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Text(
+                        songs[index].artist,
+                        style: singernametext,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: IconButton(
+                          onPressed: () {
+                            songs.removeAt(index);
+                            playlistsbox.putAt(
+                              playlistindex,
+                              Playlists(
+                                  playlistname: playlistname,
+                                  playlistsongs: songs),
+                            );
+                            Addplaylistsfromdb(
+                                allplaylistsongs: allplaylistsongs);
+                            BlocProvider.of<PlaylistsBloc>(context)
+                                .add(const PlaylistsAdded());
+
+                            //     ScaffoldMessenger.of(context).showSnackBar(
+                            // SnackBar(
+                            //   backgroundColor: Colors.white,
+                            //   duration: const Duration(seconds: 1),
+                            //   margin: const EdgeInsets.symmetric(
+                            //       horizontal: 10, vertical: 10),
+                            //   behavior: SnackBarBehavior.floating,
+                            //   shape: RoundedRectangleBorder(
+                            //       borderRadius: BorderRadius.circular(10)),
+                            //   content: Text(
+                            //       '${playlistsongs[index].metas.title} Removed from ${widget.playlistname}',style: const TextStyle(color: Colors.black),),
+                            // ),
+                            // );
+                          },
+                          icon: const Icon(
+                            Icons.remove,
+                            color: Colors.white,
+                          )),
                     );
                   });
-                }
-
-                return ListView.builder(
-                    //itemExtent: 80,
-                    itemCount: songs.length,
-                    itemBuilder: (context, index) {
-                      return ListTile(
-                        onTap: () {
-                          setState(() {
-                              currentlyplayingvisibility = true;
-                            });
-                          recents = RecentSongs(
-                              songname: songs[index].songname,
-                              artist: songs[index].artist,
-                              id: songs[index].id,
-                              duration: songs[index].duration,
-                              songurl: songs[index].songurl,
-                              count: 0);
-                              updateRecentlyPlayed(recents);
-                              final songIndex =allDbSongs.indexWhere((e) => e.songname.toString() == songs[index].songname.toString());
-                              songCount(allDbSongs[songIndex], songIndex);
-                          audioPlayerplaylist.open(
-                            Playlist(audios: playlistsongs, startIndex: index),
-                            showNotification: notificationSwitch,
-                          );
-
-                          setState(() {
-                            //playerVisibility= true;
-                          });
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                                builder: (context) => CurrentlyPlaying(
-                                      audioPlayer: audioPlayerplaylist,
-                                    )),
-                          );
-                          //print(playlistsongs);
-                        },
-                        leading: QueryArtworkWidget(
-                          id: songs[index].id,
-                          type: ArtworkType.AUDIO,
-                          artworkHeight: 90,
-                          artworkWidth: 60,
-                          artworkBorder: BorderRadius.circular(15),
-                          nullArtworkWidget: ClipRRect(
-                            borderRadius: BorderRadius.circular(15),
-                            child: Image.asset(
-                              'assets/images/currentplaylogo1.png',
-                              width: 60,
-                              height: 90,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                        title: Text(
-                          songs[index].songname,
-                          style: songnametext,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        subtitle: Text(
-                          songs[index].artist,
-                          style: singernametext,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        trailing: IconButton(
-                            onPressed: () {
-                              setState(
-                                () {
-                                  songs.removeAt(index);
-                                  playlistsbox.putAt(
-                                    widget.playlistindex,
-                                    Playlists(
-                                        playlistname: widget.playlistname,
-                                        playlistsongs: songs),
-                                  );
-                                  // audioPlayerplaylist.dispose();
-                                  Addplaylistsfromdb(
-                                      allplaylistsongs:
-                                          widget.allplaylistsongs);
-                                },
-                              );
-
-                              //     ScaffoldMessenger.of(context).showSnackBar(
-                              // SnackBar(
-                              //   backgroundColor: Colors.white,
-                              //   duration: const Duration(seconds: 1),
-                              //   margin: const EdgeInsets.symmetric(
-                              //       horizontal: 10, vertical: 10),
-                              //   behavior: SnackBarBehavior.floating,
-                              //   shape: RoundedRectangleBorder(
-                              //       borderRadius: BorderRadius.circular(10)),
-                              //   content: Text(
-                              //       '${plstsongs[index].metas.title} Removed from ${widget.playlistname}'),
-                              // ),
-                              // );
-                            },
-                            icon: const Icon(
-                              Icons.remove,
-                              color: Colors.white,
-                            )),
-                      );
-                    });
-              },
-            ),
-          ),
+            },
+          )
+              //   },
+              // ),
+              ),
         ],
       ),
     );
@@ -253,17 +250,12 @@ Widget playlisticon(BuildContext context) {
   );
 }
 
-class Popupbutton extends StatefulWidget {
+class Popupbutton extends StatelessWidget {
   Popupbutton(
       {super.key, required this.playlistindex, required this.playlistlist});
   int playlistindex;
   List<Songs> playlistlist;
 
-  @override
-  State<Popupbutton> createState() => _PopupbuttonState();
-}
-
-class _PopupbuttonState extends State<Popupbutton> {
   @override
   Widget build(BuildContext context) {
     return PopupMenuButton(
@@ -297,8 +289,8 @@ class _PopupbuttonState extends State<Popupbutton> {
       onSelected: (selectedindex) async {
         switch (selectedindex) {
           case 0:
-            showdialogue1(context, textController, widget.playlistindex,
-                widget.playlistlist);
+            showdialogue1(context, textController, playlistindex,
+                playlistlist);
             break;
           // case 1:
           //   showDialog(

@@ -29,7 +29,7 @@ AppBar appBarWidget(BuildContext context,
       ),
       IconButton(
         onPressed: () {
-          Navigator.of(context).push(MaterialPageRoute(builder: (context) => const SearchBar()));
+          Navigator.of(context).push(MaterialPageRoute(builder: (context) =>  SearchBar()));
         },
         icon: Icon(
           iconButton2,

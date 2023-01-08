@@ -1,24 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:music_player/Screens/Playlist_Page/playlists.dart';
 import 'package:music_player/widgets/app_bar.dart';
 import 'package:music_player/style/style.dart';
 import 'package:music_player/widgets/showdialogue_widget.dart';
+import '../../Application/PlaylistsBloc/playlists_bloc.dart';
 import '../../db/Model/model.dart';
 import '../../db/functions/db_functions.dart';
 import '../../widgets/heightbox_widget.dart';
 
 TextEditingController textController = TextEditingController();
 
-class PlaylistsPage extends StatefulWidget {
-  const PlaylistsPage({super.key});
+class PlaylistsPage extends StatelessWidget {
+  PlaylistsPage({super.key});
 
-  @override
-  State<PlaylistsPage> createState() => _PlaylistsPageState();
-}
+  // List<Playlists> playlistslist = [];
 
-class _PlaylistsPageState extends State<PlaylistsPage> {
-  List<Playlists> playlistslist = [];
   List<Songs> playlistsongs = [];
 
   @override
@@ -30,91 +28,95 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
           iconButton1: Icons.add_box_outlined,
           iconButton2: Icons.search_outlined,
         ),
-        body: ValueListenableBuilder<Box<Playlists>>(
-            valueListenable: Hive.box<Playlists>('playlists').listenable(),
-            builder: (context, Box<Playlists> playlistsdb, child) {
-              playlistslist = playlistsdb.values.toList();
-              return playlistsdb.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'No Playlist!\nCreate one.',
-                        style: songnametext,
-                      ),
-                    )
-                  : GridView.builder(
-                      physics: const BouncingScrollPhysics(),
-                      itemCount: playlistslist.length,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 3, childAspectRatio: 1),
-                      shrinkWrap: true,
-                      itemBuilder: (context, index) {
-                        return Padding(
-                          padding: const EdgeInsets.only(left: 20, right: 20),
-                          child: GestureDetector(
-                              onTap: () =>
-                                  Navigator.of(context).push(MaterialPageRoute(
-                                      builder: ((context) => PlaylistsSongs(
-                                            playlistindex: index,
-                                            playlistname: playlistslist[index]
-                                                .playlistname,
-                                            allplaylistsongs:
-                                                playlistslist[index]
-                                                    .playlistsongs,
-                                          )))),
-                              child: playlists(context, index: index)),
-                        );
-                      },
-                    );
-            }));
+        body:
+            // ValueListenableBuilder<Box<Playlists>>(
+            //     valueListenable: Hive.box<Playlists>('playlists').listenable(),
+            //     builder: (context, Box<Playlists> playlistsdb, child) {
+
+            BlocBuilder<PlaylistsBloc, PlaylistsState>(
+          builder: (context, state) {
+            final playlistslist = state.playlistdb.toList();
+            if (playlistslist.isEmpty) {
+              return const Center(
+                child: Text(
+                  'No Playlist!\nCreate one.',
+                  style: songnametext,
+                ),
+              );
+            }
+            return GridView.builder(
+              physics: const BouncingScrollPhysics(),
+              itemCount: playlistslist.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3, childAspectRatio: 1),
+              shrinkWrap: true,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.only(left: 20, right: 20),
+                  child: GestureDetector(
+                      onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                          builder: ((context) => PlaylistsSongs(
+                                playlistindex: index,
+                                playlistname: playlistslist[index].playlistname,
+                                allplaylistsongs:
+                                    playlistslist[index].playlistsongs,
+                              )))),
+                      child: playlists(context, index: index)),
+                );
+              },
+            );
+          },
+        )
+        // })
+        );
   }
 
   Widget playlists(BuildContext context, {required int index}) {
-    return ListView(
-      children: [
-        Stack(
+    return BlocBuilder<PlaylistsBloc, PlaylistsState>(
+      builder: (context, state) {
+        final playlistslist = state.playlistdb.toList();
+        return ListView(
           children: [
-            Container(
-                height: 93,
-                decoration: BoxDecoration(
-                    image: const DecorationImage(
-                      image: AssetImage('assets/images/playlists.png'),
-                      fit: BoxFit.cover,
-                    ),
-                    borderRadius: BorderRadius.circular(20))),
-            Positioned(
-              right: -9,
-              top: -2,
-              child: Popupbutton1(
-                playlistindex: index,
-                playlistlist: playlistslist[index].playlistsongs,
+            Stack(
+              children: [
+                Container(
+                    height: 93,
+                    decoration: BoxDecoration(
+                        image: const DecorationImage(
+                          image: AssetImage('assets/images/playlists.png'),
+                          fit: BoxFit.cover,
+                        ),
+                        borderRadius: BorderRadius.circular(20))),
+                Positioned(
+                  right: -9,
+                  top: -2,
+                  child: Popupbutton1(
+                    playlistindex: index,
+                    playlistlist: playlistslist[index].playlistsongs,
+                  ),
+                )
+              ],
+            ),
+            heightbox(height: 5),
+            Center(
+              child: Text(
+                playlistslist[index].playlistname,
+                style: playlistnametext1,
               ),
-            )
+            ),
           ],
-        ),
-        heightbox(height: 5),
-        Center(
-          child: Text(
-            playlistslist[index].playlistname,
-            style: playlistnametext1,
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 }
 
-class Popupbutton1 extends StatefulWidget {
+class Popupbutton1 extends StatelessWidget {
   Popupbutton1(
       {super.key, required this.playlistindex, required this.playlistlist});
   int playlistindex;
   List<Songs> playlistlist;
 
-  @override
-  State<Popupbutton1> createState() => _Popupbutton1State();
-}
-
-class _Popupbutton1State extends State<Popupbutton1> {
   @override
   Widget build(BuildContext context) {
     return PopupMenuButton(
@@ -148,8 +150,7 @@ class _Popupbutton1State extends State<Popupbutton1> {
       onSelected: (selectedindex) async {
         switch (selectedindex) {
           case 0:
-            showdialogue1(context, textController, widget.playlistindex,
-                widget.playlistlist);
+            showdialogue1(context, textController, playlistindex, playlistlist);
             break;
           case 1:
             showDialog(
@@ -164,7 +165,8 @@ class _Popupbutton1State extends State<Popupbutton1> {
                   actions: [
                     TextButton(
                       onPressed: () {
-                        playlistsbox.deleteAt(widget.playlistindex);
+                        playlistsbox.deleteAt(playlistindex);
+                        BlocProvider.of<PlaylistsBloc>(context).add(const PlaylistsAdded());
                         Navigator.pop(context);
                       },
                       child: const Text(
@@ -187,12 +189,12 @@ class _Popupbutton1State extends State<Popupbutton1> {
       },
     );
   }
-  
 }
+
 Future showdialogue1(BuildContext context, TextEditingController textController,
     int index, List<Songs> playlistslist) {
-  textController =
-      TextEditingController(text: playlistsbox.values.toList()[index].playlistname);
+  textController = TextEditingController(
+      text: playlistsbox.values.toList()[index].playlistname);
   return showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -263,19 +265,24 @@ Future showdialogue1(BuildContext context, TextEditingController textController,
                             onPressed: () {
                               //List<Playlists> playlists = [];
                               if (textController.text.trim() ==
-                                  playlistsbox.values.toList()[index].playlistname) {
+                                  playlistsbox.values
+                                      .toList()[index]
+                                      .playlistname) {
                                 Navigator.pop(context);
-                              } else if(formkey.currentState!.validate()){
+                              } else if (formkey.currentState!.validate()) {
                                 playlistsbox.putAt(
                                   index,
                                   Playlists(
                                       playlistname: textController.text,
-                                      playlistsongs: playlistsbox.values.toList()[index].playlistsongs),
+                                      playlistsongs: playlistsbox.values
+                                          .toList()[index]
+                                          .playlistsongs),
                                 );
                                 Navigator.pop(context);
                                 // Navigator.pop(context);
 
                               }
+                              BlocProvider.of<PlaylistsBloc>(context).add(const PlaylistsAdded());
                               textController.clear();
                             },
                             child: const Text(
@@ -292,8 +299,3 @@ Future showdialogue1(BuildContext context, TextEditingController textController,
             ),
           ));
 }
-
-
-
-
-

@@ -1,5 +1,6 @@
 import 'package:assets_audio_player/assets_audio_player.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:music_player/Screens/Playlist_Page/Add_to_playlist.dart';
 import 'package:music_player/Screens/Playlist_Page/play&pause_button.dart';
 import 'package:music_player/db/Model/model.dart';
@@ -11,13 +12,15 @@ import 'package:music_player/widgets/favorite_function.dart';
 import 'package:music_player/widgets/heightbox_widget.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 
+import '../../Application/FavoritesBloc/favorites_bloc.dart';
+import '../../Application/HomeScreenBloc/home_screen_bloc.dart';
 import '../Favourites_page/Favorite/favourite_fuction.dart';
 
-bool isRepeat = false;
-bool isShuffle = false;
+// bool isRepeat = false;
+// bool isShuffle = false;
 List<Favsongs> fav = [];
 
-class CurrentlyPlaying extends StatefulWidget {
+class CurrentlyPlaying extends StatelessWidget {
   final AssetsAudioPlayer audioPlayer;
 
   const CurrentlyPlaying({
@@ -25,12 +28,7 @@ class CurrentlyPlaying extends StatefulWidget {
     super.key,
   });
 
-  @override
-  State<CurrentlyPlaying> createState() => _CurrentlyPlayingState();
-}
-class _CurrentlyPlayingState extends State<CurrentlyPlaying> {
   //final AssetsAudioPlayer audioPlayer = AssetsAudioPlayer.withId('0');
-
   @override
   Widget build(BuildContext context) {
     fav = favdbsongs.values.toList();
@@ -75,7 +73,7 @@ class _CurrentlyPlayingState extends State<CurrentlyPlaying> {
                 child: IconButton(
                     onPressed: () {
                       Navigator.of(context).pop();
-                      setState(() {});
+                      // setState(() {});
                     },
                     icon: const Icon(
                       Icons.expand_more_sharp,
@@ -91,33 +89,42 @@ class _CurrentlyPlayingState extends State<CurrentlyPlaying> {
     Playing playing,
     List<Songs> dbSongs,
   ) {
-     RecentSongs recents;
+    RecentSongs recents;
     return Builder(
       builder: (context) {
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            IconButton(
-              icon: isShuffle
-                  ? const Icon(
-                      Icons.shuffle_rounded,
-                      color: Colors.blue,
-                    )
-                  : const Icon(Icons.shuffle_rounded),
-              color: Colors.white,
-              onPressed: () {
-                setState(() {
-                  if (isShuffle == true) {
-                    isShuffle = false;
-                    audioPlayer.toggleShuffle();
-                  } else {
-                    isShuffle = true;
-                    audioPlayer.toggleShuffle();
-                  }
-                });
+            BlocBuilder<HomeScreenBloc, HomeScreenState>(
+              builder: (context, state) {
+                return IconButton(
+                  icon: state.isShuffle
+                      ? const Icon(
+                          Icons.shuffle_rounded,
+                          color: Colors.blue,
+                        )
+                      : const Icon(Icons.shuffle_rounded),
+                  color: Colors.white,
+                  onPressed: () {
+                    if (state.isShuffle == true) {
+                        BlocProvider.of<HomeScreenBloc>(context)
+                            .add(const IsNotShuffle());
+                        // state.isShuffle = false;
+                        audioPlayer.toggleShuffle();
+                      } else {
+                        // isShuffle = true;
+                        BlocProvider.of<HomeScreenBloc>(context)
+                            .add(const IsShuffle());
+                        audioPlayer.toggleShuffle();
+                      }
+                    // setState(() {
+                      
+                    // });
+                  },
+                  padding: EdgeInsets.zero,
+                  splashRadius: 18,
+                );
               },
-              padding: EdgeInsets.zero,
-              splashRadius: 18,
             ),
             IconButton(
               icon: const Icon(Icons.skip_previous_sharp),
@@ -125,15 +132,17 @@ class _CurrentlyPlayingState extends State<CurrentlyPlaying> {
               onPressed: () {
                 audioPlayer.previous();
                 recents = RecentSongs(
-                      songname: dbSongs[playing.index].songname,
-                      artist: dbSongs[playing.index].artist,
-                      id: dbSongs[playing.index].id,
-                      duration: dbSongs[playing.index].duration,
-                      songurl: dbSongs[playing.index].songurl,
-                      count: 0);
-                      updateRecentlyPlayed(recents);
-                      final songIndex =allDbSongs.indexWhere((e) => e.songname.toString() == dbSongs[playing.index].songname.toString());
-                      songCount(allDbSongs[songIndex], songIndex);
+                    songname: dbSongs[playing.index].songname,
+                    artist: dbSongs[playing.index].artist,
+                    id: dbSongs[playing.index].id,
+                    duration: dbSongs[playing.index].duration,
+                    songurl: dbSongs[playing.index].songurl,
+                    count: 0);
+                updateRecentlyPlayed(recents);
+                final songIndex = allDbSongs.indexWhere((e) =>
+                    e.songname.toString() ==
+                    dbSongs[playing.index].songname.toString());
+                songCount(allDbSongs[songIndex], songIndex);
               },
               padding: EdgeInsets.zero,
               splashRadius: 18,
@@ -157,44 +166,53 @@ class _CurrentlyPlayingState extends State<CurrentlyPlaying> {
               onPressed: !playing.hasNext
                   ? () {
                       //audioPlayer.pause();
-                  }
+                    }
                   : () {
                       audioPlayer.next();
                       recents = RecentSongs(
-                      songname: dbSongs[playing.index].songname,
-                      artist: dbSongs[playing.index].artist,
-                      id: dbSongs[playing.index].id,
-                      duration: dbSongs[playing.index].duration,
-                      songurl: dbSongs[playing.index].songurl,
-                      count: 0);
+                          songname: dbSongs[playing.index].songname,
+                          artist: dbSongs[playing.index].artist,
+                          id: dbSongs[playing.index].id,
+                          duration: dbSongs[playing.index].duration,
+                          songurl: dbSongs[playing.index].songurl,
+                          count: 0);
                       updateRecentlyPlayed(recents);
-                      final songIndex =allDbSongs.indexWhere((e) => e.songname.toString() == dbSongs[playing.index].songname.toString());
+                      final songIndex = allDbSongs.indexWhere((e) =>
+                          e.songname.toString() ==
+                          dbSongs[playing.index].songname.toString());
                       songCount(allDbSongs[songIndex], songIndex);
-                  },
+                    },
               padding: EdgeInsets.zero,
               splashRadius: 18,
             ),
-            IconButton(
-              icon: isRepeat == true
-                  ? const Icon(
-                      Icons.repeat_one_rounded,
-                      color: Colors.blue,
-                    )
-                  : const Icon(Icons.repeat_outlined),
-              color: Colors.white,
-              onPressed: () {
-                setState(() {
-                  if (isRepeat == false) {
-                    isRepeat = true;
-                    audioPlayer.setLoopMode(LoopMode.single);
-                  } else {
-                    isRepeat = false;
-                    audioPlayer.setLoopMode(LoopMode.none);
-                  }
-                });
+            BlocBuilder<HomeScreenBloc, HomeScreenState>(
+              builder: (context, state) {
+                return IconButton(
+                  icon: state.isRepeat == true
+                      ? const Icon(
+                          Icons.repeat_one_rounded,
+                          color: Colors.blue,
+                        )
+                      : const Icon(Icons.repeat_outlined),
+                  color: Colors.white,
+                  onPressed: () {
+                    if (state.isRepeat == false) {
+                        // isRepeat = true;
+                        BlocProvider.of<HomeScreenBloc>(context).add(const IsRepeat());
+                        audioPlayer.setLoopMode(LoopMode.single);
+                      } else {
+                        // isRepeat = false;
+                        BlocProvider.of<HomeScreenBloc>(context).add(const IsNotRepeat());
+                        audioPlayer.setLoopMode(LoopMode.none);
+                      }
+                    // setState(() {
+                      
+                    // });
+                  },
+                  padding: EdgeInsets.zero,
+                  splashRadius: 18,
+                );
               },
-              padding: EdgeInsets.zero,
-              splashRadius: 18,
             ),
           ],
         );
@@ -205,39 +223,17 @@ class _CurrentlyPlayingState extends State<CurrentlyPlaying> {
 
 // bool isFavorite = false;
 
-class SongDetails extends StatefulWidget {
-  const SongDetails({
+class SongDetails extends StatelessWidget {
+  SongDetails({
     Key? key,
     required this.width,
   }) : super(key: key);
 
   final double width;
 
-  @override
-  State<SongDetails> createState() => _SongDetailsState();
-}
-
-class _SongDetailsState extends State<SongDetails> {
   final AssetsAudioPlayer audioPlayer = AssetsAudioPlayer.withId('0');
 
   // @override
-  // void initState() {
-  //   fav = favdbsongs.values.toList();
-  //   List<Songs> dbSongs = box.values.toList();
-  //   setState(() {
-  //     for (var i=0;i<=dbSongs.length;i++){
-  //     if(fav.where((element) => element.songname == dbSongs[i].songname).isEmpty){
-  //       isFavorite = false;
-  //     }
-  //     else{
-  //       isFavorite = true;
-  //     }
-  //     }
-  //   });
-  //   super.initState();
-  //   // audioPlayer;
-  // }
-
   @override
   Widget build(
     BuildContext context,
@@ -250,8 +246,8 @@ class _SongDetailsState extends State<SongDetails> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 SizedBox(
-                  height: widget.width - 100,
-                  width: widget.width - 100,
+                  height: width - 100,
+                  width: width - 100,
                   child: QueryArtworkWidget(
                     id: int.parse(playing.audio.audio.metas.id!),
                     type: ArtworkType.AUDIO,
@@ -299,10 +295,15 @@ class _SongDetailsState extends State<SongDetails> {
                         )),
                     audioPlayer.builderCurrent(
                       builder: (context, playing) {
-                        return FavIcon(
-                          index: dbSongs.indexWhere((element) =>
-                              element.songname ==
-                              playing.audio.audio.metas.title),
+                        return BlocBuilder<FavoritesBloc, FavoritesState>(
+                          builder: (context, state) {
+                            return FavIcon(
+                              dbSongs: state.dbSongs,
+                              index: dbSongs.indexWhere((element) =>
+                                  element.songname ==
+                                  playing.audio.audio.metas.title),
+                            );
+                          },
                         );
                       },
                     ),

@@ -25,7 +25,7 @@ openrecentdb () async{
   
 } 
 
-updateRecentlyPlayed(RecentSongs value) {
+Future updateRecentlyPlayed(RecentSongs value) async{
   // recentlyplayedbox.clear();
   // mostplayedsongs.clear();
   List<RecentSongs> list = recentdbbox.values.toList();

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:music_player/Application/PlaylistsBloc/playlists_bloc.dart';
 import 'package:music_player/db/Model/model.dart';
 import 'package:music_player/style/style.dart';
 import 'package:music_player/widgets/heightbox_widget.dart';
@@ -115,6 +117,7 @@ Future showdialogue(BuildContext context, {required List<Songs> plylists}) {
                               Navigator.pop(context);
                               }
                               textController.clear();
+                              BlocProvider.of<PlaylistsBloc>(context).add(const PlaylistsAdded());
                             },
                             child: const Text(
                               "Save",

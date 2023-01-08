@@ -6,13 +6,8 @@ import 'package:music_player/Screens/Search_Page/searchbar.dart';
 import 'package:music_player/style/style.dart';
 import '../../widgets/heightbox_widget.dart';
 
-class Favourites extends StatefulWidget {
+class Favourites extends StatelessWidget {
    const Favourites({super.key});
-
-  @override
-  State<Favourites> createState() => _FavouritesState();
-}
-class _FavouritesState extends State<Favourites> {
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +18,7 @@ class _FavouritesState extends State<Favourites> {
         backgroundColor: bgcolor,
         appBar: appBar(context),
         body: Column(
-          children: const [
+          children:  [
             Expanded(
               child: TabBarView(
                 children: [
@@ -40,8 +35,6 @@ class _FavouritesState extends State<Favourites> {
     );
   }
 }
-
-
 PreferredSize appBar(BuildContext context){
   return PreferredSize(
     preferredSize:const Size.fromHeight(130.0),
@@ -54,7 +47,7 @@ PreferredSize appBar(BuildContext context){
             actions: [
               IconButton(
                 onPressed: (){
-                  Navigator.of(context).push(MaterialPageRoute(builder: (context) =>const SearchBar()));
+                  Navigator.of(context).push(MaterialPageRoute(builder: (context) => SearchBar()));
                 }, 
                 icon:const Icon(Icons.search_outlined,size: 30,))
               ],

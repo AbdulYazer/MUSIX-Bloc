@@ -11,36 +11,10 @@ import '../../db/functions/db_functions.dart';
 bool playbuttonvisible = false;
 late bool status;
 
-class AppLogo extends StatefulWidget {
+class AppLogo extends StatelessWidget {
   const AppLogo({super.key});
 
-  @override
-  State<AppLogo> createState() => _AppLogoState();
-}
-final player = OnAudioQuery();
-final box = SongBox.getInstance();
-final AssetsAudioPlayer audioPlayer = AssetsAudioPlayer.withId('0');
-
-List<SongModel> fetchallSongs = [];
-List<SongModel> allsongs = [];
-List<Audio> songsList = [];
-
-
-class _AppLogoState extends State<AppLogo> {
-
-  void initState() {
-    // sharedPreferece();
-    openfavdb();
-    openplaylistsdb();
-    openrecentdb();
-    //recentdbbox.clear();
-
-    requestStoragePremission();
-    //getArtist();
-    super.initState();
-  }
-
-  Timer goToHome() {
+  Timer goToHome(BuildContext context) {
     return Timer(
       const Duration(seconds: 2),
       () => Navigator.of(context).pushReplacement(
@@ -50,14 +24,13 @@ class _AppLogoState extends State<AppLogo> {
     );
   }
 
-
-  void requestStoragePremission() async {
+  void requestStoragePremission(BuildContext context) async {
     //Permission.storage.request();
     bool permissionStatus = await player.permissionsStatus();
     // status = permissionStatus;
     if (!permissionStatus) {
       await player.permissionsRequest();
-       goToHome();
+       goToHome(context);
       fetchallSongs = await player.querySongs(
         orderType: OrderType.ASC_OR_SMALLER,
       );
@@ -89,12 +62,16 @@ class _AppLogoState extends State<AppLogo> {
       //       id: element.id),);
       // }
     }else{
-      goToHome();
+      goToHome(context);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    requestStoragePremission(context);
+    openfavdb();
+    openplaylistsdb();
+    openrecentdb();
     return const Scaffold(
       backgroundColor: Colors.black,
       body: Center(
@@ -103,3 +80,10 @@ class _AppLogoState extends State<AppLogo> {
     );
   }
 }
+final player = OnAudioQuery();
+final box = SongBox.getInstance();
+final AssetsAudioPlayer audioPlayer = AssetsAudioPlayer.withId('0');
+
+List<SongModel> fetchallSongs = [];
+List<SongModel> allsongs = [];
+List<Audio> songsList = [];
